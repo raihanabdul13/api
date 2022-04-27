@@ -118,7 +118,7 @@ if (array_key_exists('pasien_id', $_GET)) {
 					$response = new Response();
 					$response->setHttpStatusCode(400);
 					$response->setSuccess(false);
-					(!isset($jsonData->nama_pasien) ? $response->setMessages("nama_pasien is required") : false);
+					$response->setMessages("nama_pasien field is required");
 					$response->send();
 					exit;
 				}
@@ -128,6 +128,61 @@ if (array_key_exists('pasien_id', $_GET)) {
 					$response->setHttpStatusCode(400);
 					$response->setSuccess(false);
 					$response->setMessages("nama_pasien must be of type string");
+					$response->send();
+					exit;
+				}
+				//validasi inputan max lenght field nama pasien
+				if(strlen($jsonData->nama_pasien) > 255){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("nama_pasien max lenght is 255");
+					$response->send();
+					exit;
+				}
+
+				//validasi inputan required jenis kelamin pasien
+				if(!isset($jsonData->jk_pasien)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("jk_pasien field is required");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format jenis kelamin pasien
+				if(!in_array($jsonData->jk_pasien, ['L','P'])){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("jk_pasien must be worth 'L' for male and 'P' for female");
+					$response->send();
+					exit;
+				}
+				//validasi inputan required hp pasien
+				if(!isset($jsonData->hp_pasien)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("hp_pasien field is required");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format number hp pasien
+				if(!is_numeric($jsonData->hp_pasien)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("invalid format input hp_pasien must be numeric example : 6281234567890 OR 081234567890");
+					$response->send();
+					exit;
+				}
+				//validasi inputan max lenght field hp pasien
+				if(strlen($jsonData->hp_pasien) > 14 || strlen($jsonData->hp_pasien) < 9){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("hp_pasien max lenght is 14 and min lenght is 9");
 					$response->send();
 					exit;
 				}
