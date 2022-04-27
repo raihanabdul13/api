@@ -58,7 +58,7 @@ if (array_key_exists('regist_id', $_GET)) {
 	        $response->send();
 	        exit;
 	      }
-	      
+	
 	      $newRegistrasi = new Registrasi(null, 'REG-'.rand(211111, 999999), $jsonData->pasien_id, date('Y-m-d'), date('Y-m-d H:i:s'));
 
 	      $noregist = $newRegistrasi->getNoreg();
@@ -74,6 +74,15 @@ if (array_key_exists('regist_id', $_GET)) {
 	      $query->bindParam(':created_at', $created_at, PDO::PARAM_STR);
 	      $query->execute();
 	      
+		  //cek query
+		  if ($query->rowCount() === 0) {
+			$response = new Response();
+			$response->setHttpStatusCode(500);
+			$response->setSuccess(false);
+			$response->setMessages("Error creating regist");
+			$response->send();
+			exit;
+		  }
 	      // get row count
 	      $rowCount = $query->rowCount();
 

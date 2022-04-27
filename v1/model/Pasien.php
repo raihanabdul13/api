@@ -9,7 +9,7 @@ class Pasien
 	private $_jk;
 	private $_hp;
 
-	public function __construct($id, $nama, $jk, $hp)
+	public function __construct($id = null, $nama, $jk, $hp)
 	{
 		$this->setId($id);
 		$this->setNama($nama);
@@ -37,7 +37,7 @@ class Pasien
 		return $this->_hp;
 	}
 
-	public function setId($id)
+	public function setId($id = null)
 	{
 		if ($id !== null && (!is_numeric($id) || $id <= 0 || $id > 922337322929 || $this->_id !== null)) {
 			throw new PasienException("ID tidak valid");
@@ -76,10 +76,10 @@ class Pasien
 	public function returnPasienAsArray()
 	{
 		$pasien = [];
-		$pasien['id'] = $this->getId();
-		$pasien['nama'] = $this->getNama();
-		$pasien['jk'] = $this->getJk();
-		$pasien['no'] = $this->getHp();
+		$pasien['pasien_id'] = $this->getId();
+		$pasien['pasien_nama'] = $this->getNama();
+		$pasien['pasien_jk'] = $this->getJk();
+		$pasien['pasien_hp'] = $this->getHp();
 
 		return $pasien;
 	}

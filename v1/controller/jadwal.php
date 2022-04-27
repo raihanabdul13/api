@@ -95,52 +95,62 @@ if (array_key_exists('jadwal_id', $_GET)) {
 		exit;
 	}
 } else if (empty($_GET)) {
-	try {
-		$query = $readDb->prepare('SELECT * FROM jadwal');
-		$query->execute();
-		$row = $query->rowCount();
+	if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+		try {
+			$query = $readDb->prepare('SELECT * FROM jadwal');
+			$query->execute();
+			$row = $query->rowCount();
 
-		if ($row === 0) {
+			if ($row === 0) {
+				$res = new Response();
+				$res->setHttpStatusCode(400);
+				$res->setSuccess(false);
+				$res->setMessages('Jadwal tidak ditemukan!');
+				$res->send();
+				exit;
+			}
+
+			$JadwalArray = null;
+			while ($v = $query->fetch(PDO::FETCH_ASSOC)) {
+				$jadwal = new Jadwal($v['id_jadwal'], $v['hari'], $v['kuota']);
+				$jadwalArray[] = $jadwal->returnJadwalAsArray();
+			}
+
+			$returnData = [];
+			$returnData['row_returned'] = $row;
+			$returnData['data'] = $jadwalArray;
+
 			$res = new Response();
-			$res->setHttpStatusCode(400);
+			$res->setHttpStatusCode(200);
+			$res->setSuccess(true);
+			$res->toCache(true);
+			$res->setData($returnData);
+			$res->send();
+			exit;
+		} catch (PDOException $e) {
+			// Perlu direkam ke error_log, karena kesalahan dari backend yang tidak diketahui
+			error_log($e->getMessage());
+			$res = new Response();
+			$res->setHttpStatusCode(500);
 			$res->setSuccess(false);
-			$res->setMessages('Jadwal tidak ditemukan!');
+			$res->setMessages('Failed to get jadwal!');
+			$res->send();
+			exit;
+		} catch (JadwalException $e) {
+			// Tidak perlu direkam ke error_log, karena pure kesalahan dr user
+			$res = new Response();
+			$res->setHttpStatusCode(500);
+			$res->setSuccess(false);
+			$res->setMessages($e->getMessage());
 			$res->send();
 			exit;
 		}
-
-		$JadwalArray = null;
-		while ($v = $query->fetch(PDO::FETCH_ASSOC)) {
-			$jadwal = new Jadwal($v['id_jadwal'], $v['hari'], $v['kuota']);
-			$jadwalArray[] = $jadwal->returnJadwalAsArray();
-		}
-
-		$returnData = [];
-		$returnData['row_returned'] = $row;
-		$returnData['data'] = $jadwalArray;
-
+	}else{
+		// HTTP VERB POST, PUT, DELETE DIBLOCK
 		$res = new Response();
-		$res->setHttpStatusCode(200);
-		$res->setSuccess(true);
-		$res->toCache(true);
-		$res->setData($returnData);
-		$res->send();
-		exit;
-	} catch (PDOException $e) {
-		// Perlu direkam ke error_log, karena kesalahan dari backend yang tidak diketahui
-		error_log($e->getMessage());
-		$res = new Response();
-		$res->setHttpStatusCode(500);
+		$res->setHttpStatusCode(405);
 		$res->setSuccess(false);
-		$res->setMessages('Failed to get jadwal!');
-		$res->send();
-		exit;
-	} catch (JadwalException $e) {
-		// Tidak perlu direkam ke error_log, karena pure kesalahan dr user
-		$res = new Response();
-		$res->setHttpStatusCode(500);
-		$res->setSuccess(false);
-		$res->setMessages($e->getMessage());
+		$res->setMessages('Request method not allowed');
 		$res->send();
 		exit;
 	}
@@ -149,7 +159,7 @@ if (array_key_exists('jadwal_id', $_GET)) {
   	$response = new Response();
   	$response->setHttpStatusCode(404);
   	$response->setSuccess(false);
-  	$response->addMessage("Endpoint not found");
+  	$response->setMessages("Endpoint not found");
   	$response->send();
   	exit;
 }

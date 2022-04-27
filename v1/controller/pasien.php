@@ -84,12 +84,153 @@ if (array_key_exists('pasien_id', $_GET)) {
 		$res->send();
 		exit;
 	}
-} else {
+} else if(empty($_GET)){
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		try{
+			// cek content type header apakah JSON
+			if(empty($_SERVER['CONTENT_TYPE']) || $_SERVER['CONTENT_TYPE'] !== 'application/json') {
+				// respon gagal
+				$response = new Response();
+				$response->setHttpStatusCode(400);
+				$response->setSuccess(false);
+				$response->setMessages("Content Type header not set to JSON");
+				$response->send();
+				exit;
+			}
+			// get POST request body berformat JSON
+			$rawPostData = file_get_contents('php://input');
+	      
+			if(!$jsonData = json_decode($rawPostData)) {
+			  // respon gagal
+			  $response = new Response();
+			  $response->setHttpStatusCode(400);
+			  $response->setSuccess(false);
+			  $response->setMessages("Request body is not valid JSON");
+			  $response->send();
+			  exit;
+			}
+			//decode json format to array
+			$jsonData = json_decode($rawPostData);
+			// validasi inputan
+			if(isset($jsonData)) {
+				//validasi inputan required nama pasien
+				if(!isset($jsonData->nama_pasien)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					(!isset($jsonData->nama_pasien) ? $response->setMessages("nama_pasien is required") : false);
+					$response->send();
+					exit;
+				}
+				//validasi inputan format number nama pasien
+				if(is_numeric($jsonData->nama_pasien)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("nama_pasien must be of type string");
+					$response->send();
+					exit;
+				}
+			}
+			//insert input to database
+			$newPasien = new Pasien(null,$jsonData->nama_pasien, $jsonData->jk_pasien, $jsonData->hp_pasien);
+			$nama_pasien = $newPasien->getNama();
+			$jk_pasien = $newPasien->getJk();
+			$hp_pasien = $newPasien->getHp();
+			// create db query
+			$query = $writeDb->prepare('insert into pasien (nama, jk, hp) values (:nama_pasien, :jk_pasien, :hp_pasien)');
+			$query->bindParam(':nama_pasien', $nama_pasien, PDO::PARAM_STR);
+			$query->bindParam(':jk_pasien', $jk_pasien, PDO::PARAM_STR);
+			$query->bindParam(':hp_pasien', $hp_pasien, PDO::PARAM_STR);
+			$query->execute();
+
+			//cek query
+			if ($query->rowCount() === 0) {
+				$response = new Response();
+				$response->setHttpStatusCode(500);
+				$response->setSuccess(false);
+				$response->setMessages("Error creating pasien");
+				$response->send();
+				exit;
+			  }
+			  // get row count
+			  $rowCount = $query->rowCount();
+	
+			  if($rowCount === 0) {
+				// set up response for unsuccessful return
+				$response = new Response();
+				$response->setHttpStatusCode(500);
+				$response->setSuccess(false);
+				$response->setMessages("Gagal pasien created");
+				$response->send();
+				exit;
+			  }
+			  
+			  // get last task id so we can return the Task in the json
+			  $lastpasienID = $writeDb->lastInsertId();
+	
+			  $query = $writeDb->prepare('SELECT * from pasien where id = :lastpasienID');
+			  $query->bindParam(':lastpasienID', $lastpasienID, PDO::PARAM_INT);
+			  $query->execute();
+	
+			  // get row count
+			  $rowCount = $query->rowCount();
+			  
+			  // make sure that the new task was returned
+			  if($rowCount === 0) {
+				// set up response for unsuccessful return
+				$response = new Response();
+				$response->setHttpStatusCode(500);
+				$response->setSuccess(false);
+				$response->setMessages("Failed to retrieve pasien after creation");
+				$response->send();
+				exit;
+			  }
+
+			// create empty array to store tasks
+			$PasienArray = array();
+
+			// for each row returned - should be just one
+			while($row = $query->fetch(PDO::FETCH_ASSOC)) {
+			  // create new pasien object
+			  $pasien = new Pasien($row['id'], $row['nama'], $row['jk'], $row['hp']);
+  
+			  // create pasien and store in array for return in json data
+			  $PasienArray[] = $pasien->returnPasienAsArray();
+			}
+			// bundle pasien and rows returned into an array to return in the json data
+			$returnData = array();
+			$returnData['rows_returned'] = $rowCount;
+			$returnData['pasien'] = $PasienArray;
+
+			//set up response for successful return
+			$response = new Response();
+			$response->setHttpStatusCode(201);
+			$response->setSuccess(true);
+			$response->setMessages("Pasien created");
+			$response->setData($returnData);
+			$response->send();
+			exit;      
+		}
+		// if pasien fails to create due to data types, missing fields or invalid data then send error json
+	    catch(RegistException $ex) {
+			$response = new Response();
+			$response->setHttpStatusCode(400);
+			$response->setSuccess(false);
+			$response->setMessages($ex->getMessage());
+			$response->send();
+			exit;
+		}
+	}else{
+
+	}
+}
+else{
 	// 404 Error alias endpoint tidak ditemukan!
   	$response = new Response();
   	$response->setHttpStatusCode(404);
   	$response->setSuccess(false);
-  	$response->addMessage("Endpoint not found");
+  	$response->setMessages("Endpoint not found");
   	$response->send();
   	exit;
 }
