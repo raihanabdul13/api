@@ -173,7 +173,60 @@ if (array_key_exists('jadwal_id', $_GET)) {
 			$jsonData = json_decode($rawPostData);
 			// validasi inputan
 			if(isset($jsonData)) {
-				
+				//validasi inputan required hari jadwal
+				if(!isset($jsonData->hari_jadwal)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("hari_jadwal field is required");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format number hari jadwal
+				if(is_numeric($jsonData->hari_jadwal)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("hari_jadwal must be of type string");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format hari jadwal
+				if(!in_array($jsonData->hari_jadwal, ['senin','selasa','rabu','kamis','jumat','sabtu','minggu'])){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("hari_pasien must be worth days such as one of the following 'senin','selasa','rabu','kamis','jumat','sabtu','minggu'");
+					$response->send();
+					exit;
+				}
+				//validasi inputan required kuota jadwal
+				if(!isset($jsonData->kuota_jadwal)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("kuota_jadwal field is required");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format number kuota jadwal
+				if(!is_numeric($jsonData->kuota_jadwal)){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("kuota_jadwal must be of type number");
+					$response->send();
+					exit;
+				}
+				//validasi inputan format kuota jadwal
+				if($jsonData->kuota_jadwal < 0 || $jsonData->kuota_jadwal > 999){
+					$response = new Response();
+					$response->setHttpStatusCode(400);
+					$response->setSuccess(false);
+					$response->setMessages("kuota_jadwal must be greater than 0 and less than 999");
+					$response->send();
+					exit;
+				}
 			}
 			//insert input to database
 			$newJadwal = new Jadwal(null,$jsonData->hari_jadwal, $jsonData->kuota_jadwal);
