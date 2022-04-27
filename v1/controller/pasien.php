@@ -277,7 +277,13 @@ if (array_key_exists('pasien_id', $_GET)) {
 			exit;
 		}
 	}else{
-
+		// HTTP VERB GET, PUT, DELETE DIBLOCK
+		$res = new Response();
+		$res->setHttpStatusCode(405);
+		$res->setSuccess(false);
+		$res->setMessages('Request method not allowed');
+		$res->send();
+		exit;
 	}
 }
 else{
