@@ -145,7 +145,112 @@ if (array_key_exists('jadwal_id', $_GET)) {
 			$res->send();
 			exit;
 		}
+	}else if($_SERVER['REQUEST_METHOD'] === 'POST'){
+		try{
+			// cek content type header apakah JSON
+			if(empty($_SERVER['CONTENT_TYPE']) || $_SERVER['CONTENT_TYPE'] !== 'application/json') {
+				// respon gagal
+				$response = new Response();
+				$response->setHttpStatusCode(400);
+				$response->setSuccess(false);
+				$response->setMessages("Content Type header not set to JSON");
+				$response->send();
+				exit;
+			}
+			// get POST request body berformat JSON
+			$rawPostData = file_get_contents('php://input');
+	      
+			if(!$jsonData = json_decode($rawPostData)) {
+			  // respon gagal
+			  $response = new Response();
+			  $response->setHttpStatusCode(400);
+			  $response->setSuccess(false);
+			  $response->setMessages("Request body is not valid JSON");
+			  $response->send();
+			  exit;
+			}
+			//decode json format to array
+			$jsonData = json_decode($rawPostData);
+			// validasi inputan
+			if(isset($jsonData)) {
+				
+			}
+			//insert input to database
+			$newJadwal = new Jadwal(null,$jsonData->hari_jadwal, $jsonData->kuota_jadwal);
+			$hari_jadwal = $newJadwal->getHari();
+			$kuota_jadwal = $newJadwal->getKuota();
+			// create db query
+			$query = $writeDb->prepare('insert into jadwal (hari, kuota) values (:hari_jadwal, :kuota_jadwal)');
+			$query->bindParam(':hari_jadwal', $hari_jadwal, PDO::PARAM_STR);
+			$query->bindParam(':kuota_jadwal', $kuota_jadwal, PDO::PARAM_STR);
+			$query->execute();
+
+			//cek query
+			if ($query->rowCount() === 0) {
+				$response = new Response();
+				$response->setHttpStatusCode(500);
+				$response->setSuccess(false);
+				$response->setMessages("Error creating jadwal");
+				$response->send();
+				exit;
+			  }
+			  
+			  // get last task id so we can return the Task in the json
+			  $lastjadwalID = $writeDb->lastInsertId();
+	
+			  $query = $writeDb->prepare('SELECT * from jadwal where id_jadwal = :lastjadwalID');
+			  $query->bindParam(':lastjadwalID', $lastjadwalID, PDO::PARAM_INT);
+			  $query->execute();
+	
+			  // get row count
+			  $rowCount = $query->rowCount();
+			  
+			  // make sure that the new task was returned
+			  if($rowCount === 0) {
+				// set up response for unsuccessful return
+				$response = new Response();
+				$response->setHttpStatusCode(500);
+				$response->setSuccess(false);
+				$response->setMessages("Failed to retrieve jadwal after creation");
+				$response->send();
+				exit;
+			  }
+
+			// create empty array to store tasks
+			$JadwalArray = array();
+
+			// for each row returned - should be just one
+			while($row = $query->fetch(PDO::FETCH_ASSOC)) {
+			  // create new jadwal object
+			  $jadwal = new Jadwal($row['id_jadwal'], $row['hari'], $row['kuota']);
+			  // create jadwal and store in array for return in json data
+			  $JadwalArray[] = $jadwal->returnJadwalAsArray();
+			}
+			// bundle jadwal and rows returned into an array to return in the json data
+			$returnData = array();
+			$returnData['rows_returned'] = $rowCount;
+			$returnData['jadwal'] = $JadwalArray;
+
+			//set up response for successful return
+			$response = new Response();
+			$response->setHttpStatusCode(201);
+			$response->setSuccess(true);
+			$response->setMessages("Jadwal created");
+			$response->setData($returnData);
+			$response->send();
+			exit;      
+		}
+		// if jadwal fails to create due to data types, missing fields or invalid data then send error json
+	    catch(RegistException $ex) {
+			$response = new Response();
+			$response->setHttpStatusCode(400);
+			$response->setSuccess(false);
+			$response->setMessages($ex->getMessage());
+			$response->send();
+			exit;
+		}
 	}else{
+
 		// HTTP VERB POST, PUT, DELETE DIBLOCK
 		$res = new Response();
 		$res->setHttpStatusCode(405);

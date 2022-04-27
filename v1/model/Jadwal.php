@@ -9,7 +9,7 @@ class Jadwal
 	private $_hari;
 	private $_kuota;
 
-	public function __construct($id, $hari, $kuota)
+	public function __construct($id = null, $hari, $kuota)
 	{
 		$this->setId($id);
 		$this->setHari($hari);
@@ -17,7 +17,7 @@ class Jadwal
 	}
 
 	// Setiap function set, kasih validasi
-	public function setId($id)
+	public function setId($id = null)
 	{
 		if ($id !== null && (!is_numeric($id) || $id <= 0 || $id > 99 || $this->_id !== null)) {
 			throw new PasienException("ID tidak valid");
@@ -59,9 +59,9 @@ class Jadwal
 	public function returnJadwalAsArray()
 	{
 		$jdwl = [];
-		$jdwl['id'] = $this->getId();
-		$jdwl['hari'] = $this->getHari();
-		$jdwl['kuota'] = $this->getKuota();
+		$jdwl['jadwal_id'] = $this->getId();
+		$jdwl['jadwal_hari'] = $this->getHari();
+		$jdwl['jadwal_kuota'] = $this->getKuota();
 
 		return $jdwl;
 	}
