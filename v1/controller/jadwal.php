@@ -303,8 +303,7 @@ if (array_key_exists('jadwal_id', $_GET)) {
 			exit;
 		}
 	}else{
-
-		// HTTP VERB POST, PUT, DELETE DIBLOCK
+		// HTTP VERB PUT, DELETE DIBLOCK
 		$res = new Response();
 		$res->setHttpStatusCode(405);
 		$res->setSuccess(false);
